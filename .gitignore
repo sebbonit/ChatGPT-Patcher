@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Local extraction / verification artifacts
+.chatgpt-mod/
+
+# Extracted ChatGPT app bundles (not patcher source)
+app-initial*.js
+ChatGPT-Hello.app/
+
+# Patch backups created inside app bundles
+*.original-backup
