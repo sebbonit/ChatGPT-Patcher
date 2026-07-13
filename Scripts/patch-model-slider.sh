@@ -40,6 +40,7 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PATCHER_FEATURES="${PATCHER_FEATURES:-custom-model-slider}"
 has_feature() {
     case ",$PATCHER_FEATURES," in
@@ -104,6 +105,19 @@ SLIDER_POINTS=(
     "gpt-5.6-terra:xhigh"
 )
 
+# Points enabled on the composer slider by default (left to right).
+ACTIVE_SLIDER_POINTS=(
+    "gpt-5.6-luna:medium"
+    "gpt-5.6-luna:high"
+    "gpt-5.6-luna:xhigh"
+    "gpt-5.6-luna:max"
+    "gpt-5.6-sol:low"
+    "gpt-5.6-sol:medium"
+    "gpt-5.6-sol:high"
+    "gpt-5.6-sol:xhigh"
+    "gpt-5.6-sol:max"
+)
+
 # Used when the composer does not already have a valid point selected.
 DEFAULT_SLIDER_POINT="gpt-5.6-sol:medium"
 SLIDER_STORAGE_KEY="chatgpt-patcher.slider-order"
@@ -163,7 +177,7 @@ echo "App bundle:  $APP_PATH"
 echo "Asar:        $ASAR_PATH"
 echo ""
 
-PROVIDER_INSTALLER="$(cd "$(dirname "$0")" && pwd)/install-opencodego-provider.sh"
+PROVIDER_INSTALLER="$SCRIPT_DIR/install-opencodego-provider.sh"
 if has_feature "opencodego-provider" && ! has_feature "custom-model-slider"; then
     if [ ! -x "$PROVIDER_INSTALLER" ]; then
         echo "ERROR: OpenCode Go provider installer is missing: $PROVIDER_INSTALLER"
@@ -224,6 +238,21 @@ echo ""
 
 # Pass slider points as a newline-delimited string
 SLIDER_POINTS_STR=$(printf '%s\n' "${SLIDER_POINTS[@]}")
+ACTIVE_SLIDER_POINTS_STR=$(printf '%s\n' "${ACTIVE_SLIDER_POINTS[@]}")
+AVAILABLE_SLIDER_POINTS=()
+for point in "${SLIDER_POINTS[@]}"; do
+    is_active=0
+    for active_point in "${ACTIVE_SLIDER_POINTS[@]}"; do
+        if [ "$point" = "$active_point" ]; then
+            is_active=1
+            break
+        fi
+    done
+    if [ "$is_active" -eq 0 ]; then
+        AVAILABLE_SLIDER_POINTS+=("$point")
+    fi
+done
+AVAILABLE_SLIDER_POINTS_STR=$(printf '%s\n' "${AVAILABLE_SLIDER_POINTS[@]}")
 
 if ! PATCH_RESULT=$("$NODE_BIN" -e '
 const fs = require("fs");
@@ -233,7 +262,9 @@ const extractedDir = process.argv[1];
 const sliderPointsStr = process.argv[2];
 const defaultSliderPoint = process.argv[3];
 const sliderStorageKey = process.argv[4];
+const scriptDir = process.argv[5];
 const sliderPoints = sliderPointsStr.split("\n").filter(s => s.length > 0);
+const { OPEN_CODE_LABELS } = require(path.join(scriptDir, "patch-labels.js"));
 
 // Build the new array content from slider points
 function modelToLabel(model) {
@@ -241,15 +272,7 @@ function modelToLabel(model) {
     let stripped = model.replace(/^gpt-/, "");
     const label = stripped.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
     if (model.startsWith("gpt-")) return label;
-    const openCodeLabels = {
-        "glm-5": "GLM-5",
-        "glm-5.1": "GLM-5.1",
-        "glm-5.2": "GLM-5.2",
-        "deepseek-v4-pro": "DeepSeek V4 Pro",
-        "deepseek-v4-flash": "DeepSeek V4 Flash",
-        "hy3-preview": "HY3 Preview",
-    };
-    return `OpenCode Go · ${openCodeLabels[model] || label}`;
+    return `OpenCode Go · ${OPEN_CODE_LABELS[model] || label}`;
 }
 
 function buildEntry(model, effort) {
@@ -447,7 +470,7 @@ console.log("  JavaScript syntax check passed for all modified bundles.");
 
 // Output the target file path for verification step
 console.log("TARGET_FILE=" + targetFile);
-' "$EXTRACTED_DIR" "$SLIDER_POINTS_STR" "$DEFAULT_SLIDER_POINT" "$SLIDER_STORAGE_KEY"); then
+' "$EXTRACTED_DIR" "$SLIDER_POINTS_STR" "$DEFAULT_SLIDER_POINT" "$SLIDER_STORAGE_KEY" "$SCRIPT_DIR"); then
     echo ""
     echo "ERROR: Failed to find or replace slider arrays."
     echo "$PATCH_RESULT"
@@ -678,17 +701,7 @@ echo "Step 10: Clearing inherited quarantine metadata from the patched copy..."
 echo "  Cleared."
 echo ""
 
-echo "=== Patch complete! ==="
-echo ""
-echo "Slider point catalog:"
-for point in "${SLIDER_POINTS[@]}"; do
-    model="${point%%:*}"
-    effort="${point##*:}"
-    # Simple label display
-    stripped="${model#gpt-}"
-    label=$(echo "$stripped" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')
-    echo "  - $label ($effort)"
-done
+"$NODE_BIN" "$SCRIPT_DIR/patch-labels.js" catalog "$ACTIVE_SLIDER_POINTS_STR" "$AVAILABLE_SLIDER_POINTS_STR"
 echo ""
 if [ "$SKIP_BACKUP" != "1" ]; then
     echo "Backup of original: $ASAR_BACKUP"

@@ -153,8 +153,8 @@ private final class PatcherViewModel: ObservableObject {
             }
         }
     }
-    @Published var output = "Choose the original Codex app, an output location, and the features to patch. The original will not be changed."
-    @Published var status = "Looking for Codex…"
+    @Published var output = ""
+    @Published var status = "Looking for ChatGPT…"
     @Published var statusLevel: StatusLevel = .neutral
     @Published var activityLabel = "Copying…"
     @Published var isRunning = false
@@ -175,7 +175,7 @@ private final class PatcherViewModel: ObservableObject {
     }
 
     var confirmationTitle: String {
-        willReplaceDestination ? "Replace existing patched copy?" : "Create a patched Codex copy?"
+        willReplaceDestination ? "Replace existing patched copy?" : "Create a patched ChatGPT copy?"
     }
 
     var confirmationMessage: String {
@@ -279,7 +279,7 @@ private final class PatcherViewModel: ObservableObject {
 
     func chooseAnotherApp() {
         let panel = NSOpenPanel()
-        panel.title = "Choose the original Codex app"
+        panel.title = "Choose the original ChatGPT app"
         panel.message = "This source app will be copied and will not be changed."
         panel.prompt = "Choose source app"
         panel.allowsMultipleSelection = false
@@ -305,12 +305,12 @@ private final class PatcherViewModel: ObservableObject {
 
     func chooseDestination() {
         guard selectedTarget != nil else {
-            setStatus("Choose the original Codex app first.", level: .warning)
+            setStatus("Choose the original ChatGPT app first.", level: .warning)
             return
         }
 
         let panel = NSSavePanel()
-        panel.title = "Save patched Codex copy"
+        panel.title = "Save patched ChatGPT copy"
         panel.message = "A new app bundle will be created here. The original app will not be changed."
         panel.prompt = "Save patched copy"
         panel.canCreateDirectories = true
@@ -337,7 +337,7 @@ private final class PatcherViewModel: ObservableObject {
     func createPatchedCopy() {
         guard !isRunning else { return }
         guard let source = selectedTarget else {
-            setStatus("Choose the original Codex app first.", level: .warning)
+            setStatus("Choose the original ChatGPT app first.", level: .warning)
             return
         }
         guard source.isUsableSource else {
@@ -377,7 +377,7 @@ private final class PatcherViewModel: ObservableObject {
         recoverableStagingURL = nil
         let replacingExistingCopy = willReplaceDestination
         output = """
-        === Creating a patched Codex copy ===
+        === Creating ChatGPT (Patched).app ===
         Source (unchanged): \(source.url.path)
         Final output:      \(destinationURL.path)
         Selected features: \(selectedFeatures.sorted { $0.title < $1.title }.map(\.title).joined(separator: ", "))
@@ -416,7 +416,8 @@ private final class PatcherViewModel: ObservableObject {
     func updateStatus() {
         guard !isRunning else { return }
         guard let source = selectedTarget else {
-            setStatus("No Codex app was found automatically. Choose a source app.", level: .warning)
+            setStatus("No ChatGPT app was found automatically. Choose a source app.", level: .warning)
+            refreshIdleConsole()
             return
         }
         if !source.isUsableSource {
@@ -433,6 +434,61 @@ private final class PatcherViewModel: ObservableObject {
             setStatus("Ready to replace the existing patched copy after verification. The source app will remain unchanged.", level: .warning)
         } else {
             setStatus("Ready to create a patched copy. The source app will remain unchanged.", level: .ready)
+        }
+        refreshIdleConsole()
+    }
+
+    private func refreshIdleConsole() {
+        guard !isRunning, lastPatchedCopyURL == nil else { return }
+        output = idleConsoleText()
+    }
+
+    private func idleConsoleText() -> String {
+        let sourceLine: String
+        if let source = selectedTarget {
+            sourceLine = "\(source.displayName) · \(source.url.path)"
+        } else {
+            sourceLine = "(not selected)"
+        }
+
+        let outputLine: String
+        if let destinationURL {
+            outputLine = "\(destinationURL.deletingPathExtension().lastPathComponent) · \(destinationURL.deletingLastPathComponent().path)"
+        } else {
+            outputLine = "(not selected)"
+        }
+
+        let featuresBlock: String
+        if selectedFeatures.isEmpty {
+            featuresBlock = "  (none selected — choose at least one)"
+        } else {
+            featuresBlock = selectedFeatures
+                .sorted { $0.title < $1.title }
+                .map(idleFeatureLine)
+                .joined(separator: "\n")
+        }
+
+        return """
+        Ready to build ChatGPT (Patched).app
+
+        Source (unchanged):  \(sourceLine)
+        Output:              \(outputLine)
+
+        Features:
+        \(featuresBlock)
+
+        Default picker point: 5.6 Sol · medium
+        Quit ChatGPT before patching or launching the patched copy.
+        Re-run the patcher after each ChatGPT app update.
+        """
+    }
+
+    private func idleFeatureLine(for feature: PatchFeature) -> String {
+        switch feature {
+        case .customModelSlider:
+            return "  • Custom Model Slider — default track: 5.6 Luna + 5.6 Sol (Terra/OpenCode in Settings)"
+        case .openCodeGoProvider:
+            return "  • OpenCode Go Provider — 20 third-party models (separate per-thread provider)"
         }
     }
 
@@ -862,7 +918,7 @@ private struct ContentView: View {
                 }
 
                 PathWell(
-                    path: patcher.selectedTarget?.url.path ?? "Choose the original Codex app to copy",
+                    path: patcher.selectedTarget?.url.path ?? "Choose the original ChatGPT app to copy",
                     symbol: "internaldrive"
                 )
 
