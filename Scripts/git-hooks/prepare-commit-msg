@@ -1,0 +1,14 @@
+#!/bin/bash
+# Strips Cursor attribution lines that Cursor may inject into commit messages.
+
+set -euo pipefail
+
+MSG_FILE="${1:?}"
+
+if [ ! -f "$MSG_FILE" ]; then
+  exit 0
+fi
+
+TMP_FILE="$(mktemp)"
+grep -Ev '^(Co-authored-by: Cursor <cursoragent@cursor.com>|Made-with: Cursor)$' "$MSG_FILE" > "$TMP_FILE"
+mv "$TMP_FILE" "$MSG_FILE"

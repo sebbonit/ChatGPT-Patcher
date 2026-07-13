@@ -1,0 +1,14 @@
+---
+description: Never add Cursor co-author or attribution trailers to git commits or PRs
+alwaysApply: true
+---
+
+# No Cursor git attribution
+
+Never add any of the following to commits, commit messages, PR descriptions, or code comments:
+
+- `Co-authored-by: Cursor <cursoragent@cursor.com>`
+- `Made-with: Cursor`
+- Any other Cursor attribution trailer or footer
+
+When creating git commits, use only the user's identity. Do not append co-author or attribution lines.
