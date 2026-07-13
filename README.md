@@ -1,6 +1,8 @@
 # ChatGPT Patcher
 
-A macOS tool that creates a **modified copy** of the official Codex app (`com.openai.codex`) with optional enhancements — without touching your original installation.
+**ChatGPT Patcher** is a macOS tool that patches the official **ChatGPT / Codex desktop app** with a **custom model slider**, optional **OpenCode Go models**, and a safe **patched copy** workflow — without modifying your original installation.
+
+Customize the ChatGPT model picker on Mac, reorder reasoning-effort points, hide unused models, and build a verified `ChatGPT (Patched).app` you can launch from Finder.
 
 ![ChatGPT Patcher — select a source app, choose an output location, pick features, and build a verified patched copy](<Public/Screenshot 2026-07-13 at 22.57.07.png>)
 
@@ -204,6 +206,30 @@ To remove the OpenCode Go runtime from an already-patched app (without touching 
 ```bash
 ./Scripts/uninstall-opencodego-provider.sh /path/to/ChatGPT\ \(Patched\).app
 ```
+
+---
+
+## FAQ
+
+### How do I customize the ChatGPT model slider on Mac?
+
+Clone this repo, run [`Scripts/launch-chatgpt-patcher.command`](Scripts/launch-chatgpt-patcher.command), enable **Custom Model Slider & Configuration**, and build a patched copy. Then open **Settings → Model slider** in the patched app to reorder, hide, or restore model points.
+
+### How do I add OpenCode Go models to Codex?
+
+Enable **OpenCode Go Provider & Models** in the patcher, build your patched copy, and authenticate with `OPENCODE_GO_API_KEY` or `opencode auth login --provider opencode-go`. OpenCode models appear in the model picker as a separate per-thread provider.
+
+### Is the original ChatGPT app modified?
+
+No. The patcher always works on a staged copy. Your source app in `/Applications` stays untouched.
+
+### Do I need to re-patch after a ChatGPT update?
+
+Yes. Re-run the patcher against the new unmodified Codex app after each update to re-apply modifications.
+
+### What models are on the default slider?
+
+**5.6 Luna** (medium–max), **5.6 Sol** (low–max), and **5.6 Terra** (medium–xhigh, available to add via Settings).
 
 ---
 
