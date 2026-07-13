@@ -2,6 +2,8 @@
 
 A macOS tool that creates a **modified copy** of the official Codex app (`com.openai.codex`) with optional enhancements — without touching your original installation.
 
+![ChatGPT Patcher — select a source app, choose an output location, pick features, and build a verified patched copy](<Public/Screenshot 2026-07-13 at 22.57.07.png>)
+
 Use the native **ChatGPT Patcher** app to pick a source app, choose where to save the patched copy, select features, and build a verified bundle you can launch from Finder.
 
 ```text
