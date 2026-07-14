@@ -82,9 +82,9 @@ struct ChatGPTPatcherApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(patcher)
-                .frame(minWidth: 760, maxWidth: .infinity, minHeight: 680, maxHeight: .infinity)
+                .frame(minWidth: 720, maxWidth: .infinity, minHeight: 620, maxHeight: .infinity)
         }
-        .defaultSize(width: 900, height: 760)
+        .defaultSize(width: 820, height: 680)
         .windowResizability(.contentMinSize)
     }
 }
@@ -832,22 +832,14 @@ private struct ContentView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .windowBackgroundColor),
-                    Color.accentColor.opacity(0.045),
-                    Color(nsColor: .windowBackgroundColor)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color(nsColor: .windowBackgroundColor)
             .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 header
                 workflowRail
 
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .top, spacing: 12) {
                     sourceSection
                     destinationSection
                 }
@@ -856,7 +848,7 @@ private struct ContentView: View {
                 actionSection
                 logSection
             }
-            .padding(18)
+            .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onReceive(patcher.$selectedTarget) { _ in
@@ -877,15 +869,15 @@ private struct ContentView: View {
 
     private var sourceSection: some View {
         PatcherCard {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionEyebrow(number: "01", title: "SOURCE", symbol: "shippingbox.fill")
+            VStack(alignment: .leading, spacing: 9) {
+                SectionEyebrow(number: "01", title: "Source", symbol: "shippingbox")
 
-                HStack(spacing: 12) {
-                    AppGlyph(symbol: "app.dashed", tint: .indigo)
+                HStack(spacing: 10) {
+                    AppGlyph(symbol: "app.dashed")
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(patcher.selectedTarget?.displayName ?? "No source selected")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                         Text(patcher.selectedTarget?.version.map { "Version \($0)" } ?? "Original application")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -940,15 +932,15 @@ private struct ContentView: View {
 
     private var destinationSection: some View {
         PatcherCard {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionEyebrow(number: "02", title: "DESTINATION", symbol: "arrow.down.app.fill")
+            VStack(alignment: .leading, spacing: 9) {
+                SectionEyebrow(number: "02", title: "Destination", symbol: "arrow.down.app")
 
-                HStack(spacing: 12) {
-                    AppGlyph(symbol: "sparkles", tint: .purple)
+                HStack(spacing: 10) {
+                    AppGlyph(symbol: "doc.badge.gearshape")
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(patcher.destinationURL?.deletingPathExtension().lastPathComponent ?? "No output selected")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .lineLimit(1)
                         Text("Verified patched copy")
                             .font(.caption)
@@ -990,22 +982,19 @@ private struct ContentView: View {
     }
 
     private var actionSection: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(patcher.statusLevel.tint.opacity(0.13))
-                if patcher.isRunning {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Image(systemName: patcher.statusLevel.symbolName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(patcher.statusLevel.tint)
-                }
+        HStack(spacing: 11) {
+            if patcher.isRunning {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 18)
+            } else {
+                Image(systemName: patcher.statusLevel.symbolName)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(patcher.statusLevel.tint)
+                    .frame(width: 18)
             }
-            .frame(width: 32, height: 32)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(patcher.isRunning ? patcher.activityLabel : patcher.statusLevel.heading)
                     .font(.system(size: 13, weight: .semibold))
                 Text(patcher.status)
@@ -1020,31 +1009,32 @@ private struct ContentView: View {
                 showingPatchConfirmation = true
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "wand.and.stars")
+                    Image(systemName: "hammer")
                     Text("Build patched copy")
                 }
                 .font(.system(size: 12, weight: .semibold))
-                .padding(.horizontal, 6)
-                .frame(minHeight: 26)
+                .padding(.horizontal, 3)
+                .frame(minHeight: 24)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .disabled(!patcher.canCreatePatchedCopy)
         }
-        .padding(10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(patcher.statusLevel.tint.opacity(0.22), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(.primary.opacity(0.1), lineWidth: 1)
         }
     }
 
     private var featuresSection: some View {
         PatcherCard {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 9) {
                 HStack(alignment: .firstTextBaseline) {
-                    SectionEyebrow(number: "03", title: "FEATURES TO PATCH", symbol: "puzzlepiece.extension.fill")
+                    SectionEyebrow(number: "03", title: "Features", symbol: "puzzlepiece.extension")
                     Text("\(patcher.selectedFeatures.count) selected")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(.secondary)
@@ -1064,27 +1054,20 @@ private struct ContentView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [.indigo, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: .purple.opacity(0.24), radius: 14, y: 6)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.primary.opacity(0.08))
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 25, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.primary)
             }
-            .frame(width: 46, height: 46)
+            .frame(width: 36, height: 36)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 9) {
                     Text("ChatGPT Patcher")
-                    .font(.system(size: 21, weight: .bold, design: .rounded))
+                    .font(.system(size: 19, weight: .semibold))
                 }
                 Text("Build a customized, verified copy while your original app stays pristine.")
                     .font(.caption)
@@ -1093,12 +1076,9 @@ private struct ContentView: View {
 
             Spacer()
 
-            Label("LOCAL • ON-DEVICE", systemImage: "lock.fill")
-                .font(.system(size: 10, weight: .bold))
+            Label("On-device", systemImage: "lock")
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.secondary.opacity(0.08), in: Capsule())
         }
     }
 
@@ -1116,40 +1096,39 @@ private struct ContentView: View {
                 isActive: patcher.canCreatePatchedCopy || patcher.isRunning || patcher.lastPatchedCopyURL != nil
             )
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 2)
     }
 
     private var logSection: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 9) {
-                HStack(spacing: 6) {
-                    Circle().fill(Color.red.opacity(0.85)).frame(width: 8, height: 8)
-                    Circle().fill(Color.yellow.opacity(0.85)).frame(width: 8, height: 8)
-                    Circle().fill(Color.green.opacity(0.85)).frame(width: 8, height: 8)
-                }
+            HStack(spacing: 8) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.tertiary)
 
-                Text("PATCH CONSOLE")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                Text("Patch log")
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
 
                 Spacer()
 
                 if patcher.isRunning {
                     HStack(spacing: 5) {
-                        Circle().fill(Color.green).frame(width: 6, height: 6)
-                        Text("LIVE")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.green)
+                        ProgressView()
+                            .controlSize(.mini)
+                        Text("Running")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
                     } else {
-                    Text("OUTPUT")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    Text("Output")
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(.tertiary)
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(height: 38)
-            .background(Color.white.opacity(0.035))
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(Color.primary.opacity(0.025))
 
             Divider().opacity(0.25)
 
@@ -1164,7 +1143,7 @@ private struct ContentView: View {
 
                         Color.clear.frame(height: 1).id("patch-log-bottom")
                     }
-                    .padding(14)
+                    .padding(12)
                 }
                 .onAppear {
                     DispatchQueue.main.async { proxy.scrollTo("patch-log-bottom", anchor: .bottom) }
@@ -1173,13 +1152,13 @@ private struct ContentView: View {
                     DispatchQueue.main.async { proxy.scrollTo("patch-log-bottom", anchor: .bottom) }
                 }
             }
-            .frame(minHeight: 110, maxHeight: .infinity)
+            .frame(minHeight: 96, maxHeight: .infinity)
             .layoutPriority(1)
         }
-        .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color(nsColor: .textBackgroundColor).opacity(0.62))
+        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .stroke(.primary.opacity(0.1), lineWidth: 1)
         }
     }
@@ -1190,11 +1169,11 @@ private struct PatcherCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(11)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(.primary.opacity(0.09), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(.primary.opacity(0.1), lineWidth: 1)
             }
     }
 }
@@ -1207,14 +1186,12 @@ private struct SectionEyebrow: View {
     var body: some View {
         HStack(spacing: 7) {
             Text(number)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundStyle(.white)
-                .frame(width: 17, height: 17)
-                .background(Color.accentColor, in: Circle())
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.tertiary)
+                .frame(width: 17, alignment: .leading)
             Text(title)
-                .font(.system(size: 10, weight: .bold))
-                .tracking(0.7)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.primary)
             Spacer()
             Image(systemName: symbol)
                 .font(.caption)
@@ -1225,19 +1202,18 @@ private struct SectionEyebrow: View {
 
 private struct AppGlyph: View {
     let symbol: String
-    let tint: Color
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(tint.opacity(0.12))
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke(tint.opacity(0.16))
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(0.055))
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(Color.primary.opacity(0.08))
             Image(systemName: symbol)
-                .font(.system(size: 19, weight: .medium))
-                .foregroundStyle(tint)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(.secondary)
         }
-        .frame(width: 34, height: 34)
+        .frame(width: 30, height: 30)
     }
 }
 
@@ -1249,15 +1225,10 @@ private struct FeatureSelectionRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 9) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08))
-                    Image(systemName: feature.symbolName)
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                }
-                .frame(width: 32, height: 32)
+            HStack(spacing: 10) {
+                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(feature.title)
@@ -1270,18 +1241,19 @@ private struct FeatureSelectionRow: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.55))
+                Image(systemName: feature.symbolName)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.tertiary)
             }
-            .padding(7)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
             .background(
-                isSelected ? Color.accentColor.opacity(0.055) : Color.primary.opacity(0.025),
-                in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                isSelected ? Color.primary.opacity(0.045) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 7, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(isSelected ? Color.accentColor.opacity(0.22) : Color.primary.opacity(0.06))
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(Color.primary.opacity(isSelected ? 0.1 : 0.06))
             }
         }
         .buttonStyle(.plain)
@@ -1309,8 +1281,8 @@ private struct PathWell: View {
                 .textSelection(.enabled)
         }
         .padding(.horizontal, 8)
-        .frame(maxWidth: .infinity, minHeight: 27, alignment: .leading)
-        .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(maxWidth: .infinity, minHeight: 25, alignment: .leading)
+        .background(.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 
@@ -1322,7 +1294,7 @@ private struct InfoChip: View {
     var body: some View {
         Label(title, systemImage: symbol)
             .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(tint)
+            .foregroundStyle(.secondary)
             .lineLimit(1)
     }
 }
@@ -1336,7 +1308,7 @@ private struct WorkflowStep: View {
         HStack(spacing: 7) {
             ZStack {
                 Circle()
-                    .fill(isActive ? Color.accentColor : Color.secondary.opacity(0.12))
+                    .fill(isActive ? Color.primary.opacity(0.72) : Color.secondary.opacity(0.12))
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8, weight: .bold))
@@ -1347,14 +1319,14 @@ private struct WorkflowStep: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 20, height: 20)
+            .frame(width: 18, height: 18)
             Text(title)
-                .font(.system(size: 11, weight: isActive ? .semibold : .regular))
+                .font(.system(size: 10.5, weight: isActive ? .medium : .regular))
                 .foregroundStyle(isActive ? .primary : .secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
-        .frame(width: 126, height: 24, alignment: .leading)
+        .frame(width: 116, height: 22, alignment: .leading)
     }
 }
 
@@ -1363,10 +1335,10 @@ private struct WorkflowConnector: View {
 
     var body: some View {
         Rectangle()
-            .fill(isActive ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.16))
+            .fill(isActive ? Color.primary.opacity(0.28) : Color.secondary.opacity(0.12))
             .frame(height: 1)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
     }
 }
 

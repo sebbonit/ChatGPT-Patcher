@@ -4,7 +4,7 @@
 
 Customize the ChatGPT model picker on Mac, reorder reasoning-effort points, hide unused models, and build a verified `ChatGPT (Patched).app` you can launch from Finder.
 
-![ChatGPT Patcher — select a source app, choose an output location, pick features, and build a verified patched copy](<Public/Screenshot 2026-07-13 at 22.57.07.png>)
+![ChatGPT Patcher — select a source app, choose an output location, pick features, and build a verified patched copy](<Public/Screenshot 2026-07-14 at 14.57.17.png>)
 
 Use the native **ChatGPT Patcher** app to pick a source app, choose where to save the patched copy, select features, and build a verified bundle you can launch from Finder.
 
@@ -104,7 +104,7 @@ New threads started with an OpenCode model are routed to the separate `opencodeg
 When the model slider feature is enabled, the patcher also adds a toggleable **Development Build** banner at the top of the window.
 
 - Click the banner to hide it.
-- Click the small **Dev** hint (top-right) to show it again.
+- Click the small **Dev** hint (bottom-right) to show it again.
 
 The banner uses pure CSS (no extra JavaScript), so it works regardless of content security policy.
 

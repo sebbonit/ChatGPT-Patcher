@@ -32,7 +32,7 @@
 #  10. Clears inherited quarantine metadata from the patched copy
 #
 # The development banner shows "Development Build" at the top of the window.
-# Click it to hide it; click the small "Dev" hint (top-right) to show it again.
+# Click it to hide it; click the small "Dev" hint (bottom-right) to show it again.
 #
 # If the pattern can't be found (e.g. the app was updated with renamed models
 # or a restructured picker), the script warns you and exits without modifying
@@ -503,7 +503,7 @@ const newBanner = `<input type="checkbox" id="dev-banner-toggle" checked style="
       style="position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 2147483647; padding: 8px 14px; border: 1px solid rgba(255, 165, 0, 0.4); border-radius: 999px; background: rgba(24, 24, 27, 0.92); color: #ffb84d; font: 600 13px -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24); cursor: pointer; user-select: none; transition: opacity 0.2s ease; -webkit-app-region: no-drag;"
     >Development Build</label>
     <label for="dev-banner-toggle" id="dev-banner-hint"
-      style="position: fixed; top: 40px; right: 12px; z-index: 2147483647; padding: 4px 8px; border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 6px; background: rgba(24, 24, 27, 0.85); color: rgba(255, 184, 77, 0.7); font: 500 11px -apple-system, BlinkMacSystemFont, sans-serif; cursor: pointer; user-select: none; transition: opacity 0.2s ease; -webkit-app-region: no-drag;"
+      style="position: fixed; right: 12px; bottom: 12px; z-index: 2147483647; padding: 4px 8px; border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 6px; background: rgba(24, 24, 27, 0.85); color: rgba(255, 184, 77, 0.7); font: 500 11px -apple-system, BlinkMacSystemFont, sans-serif; cursor: pointer; user-select: none; transition: opacity 0.2s ease; -webkit-app-region: no-drag;"
     >Dev</label>
     <style>
       #dev-banner-toggle:checked ~ #codex-modification-banner { opacity: 1; pointer-events: auto; }
