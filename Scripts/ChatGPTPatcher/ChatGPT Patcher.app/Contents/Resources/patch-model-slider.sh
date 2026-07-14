@@ -384,7 +384,9 @@ for (let i = matches.length - 1; i >= 0; i--) {
 // Do this after every position-based array replacement. Changing the source
 // length before using the recorded offsets would corrupt the minified bundle.
 // The native picker otherwise falls back to the first medium-effort point.
-const defaultPointPattern = /function (\w+)\(e\)\{return e\.find\(\(\{reasoningEffort:e\}\)=>e===`medium`\)\?\?e\[0\]\}/;
+// Minified JavaScript identifiers may contain "$" (the current bundle names
+// this helper "$0e"), so \w+ is too restrictive here.
+const defaultPointPattern = /function ([A-Za-z_$][\w$]*)\(e\)\{return e\.find\(\(\{reasoningEffort:e\}\)=>e===`medium`\)\?\?e\[0\]\}/;
 const defaultPointMatch = content.match(defaultPointPattern);
 if (!defaultPointMatch) {
     console.error("ERROR: Could not find the model picker default-point helper.");
