@@ -46,6 +46,12 @@ You can enable either feature alone or both together. At least one must be selec
 
 The model picker slider in Codex is replaced with a hand-picked set of GPT-5.6 points. A new **Model slider** tab appears in **Settings**, alongside General and Account.
 
+<video src="Public/Screen%20Recording%202026-07-15%20at%2016.21.51.mov" controls width="732">
+  <a href="Public/Screen%20Recording%202026-07-15%20at%2016.21.51.mov">Download screen recording</a> — composer model picker with the Faster ↔ Smarter slider.
+</video>
+
+![Codex Settings — Model slider tab for shaping the active sequence, searching available points, and applying changes live](<Public/Screenshot 2026-07-15 at 16.22.19.png>)
+
 **Default active slider (left → right):**
 
 | Model | Effort levels on slider |
