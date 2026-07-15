@@ -46,7 +46,9 @@ You can enable either feature alone or both together. At least one must be selec
 
 The model picker slider in Codex is replaced with a hand-picked set of GPT-5.6 points. A new **Model slider** tab appears in **Settings**, alongside General and Account.
 
-![Codex composer model picker — drag the Faster ↔ Smarter slider through your curated model points](<Public/Screen Recording 2026-07-15 at 16.21.51.webp>)
+<p align="center">
+  <img src="Public/Screen%20Recording%202026-07-15%20at%2016.21.51.webp" alt="Codex composer model picker — drag the Faster ↔ Smarter slider through your curated model points" style="border-radius: 12px;" />
+</p>
 
 ![Codex Settings — Model slider tab for shaping the active sequence, searching available points, and applying changes live](<Public/Screenshot 2026-07-15 at 16.22.19.png>)
 
