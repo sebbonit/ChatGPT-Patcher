@@ -2,8 +2,9 @@
 #
 # patch-model-slider.sh
 #
-# Applies selected ChatGPT Patcher features: a configurable model slider and/or
-# the OpenCode Go provider with its local Responses compatibility adapter.
+# Applies selected ChatGPT Patcher features: a configurable model slider,
+# hiding profile-menu clutter (Show pet / Invite a friend), and/or the
+# OpenCode Go provider with its local Responses compatibility adapter.
 #
 # Re-run this after every ChatGPT app update to re-apply the patch.
 #
@@ -178,7 +179,12 @@ echo "Asar:        $ASAR_PATH"
 echo ""
 
 PROVIDER_INSTALLER="$SCRIPT_DIR/install-opencodego-provider.sh"
-if has_feature "opencodego-provider" && ! has_feature "custom-model-slider"; then
+HAS_ASAR_FEATURE=0
+if has_feature "custom-model-slider" || has_feature "hide-profile-menu-items"; then
+    HAS_ASAR_FEATURE=1
+fi
+
+if has_feature "opencodego-provider" && [ "$HAS_ASAR_FEATURE" -eq 0 ]; then
     if [ ! -x "$PROVIDER_INSTALLER" ]; then
         echo "ERROR: OpenCode Go provider installer is missing: $PROVIDER_INSTALLER"
         exit 1
@@ -188,7 +194,7 @@ if has_feature "opencodego-provider" && ! has_feature "custom-model-slider"; the
     echo ""
 fi
 
-if ! has_feature "custom-model-slider"; then
+if [ "$HAS_ASAR_FEATURE" -eq 0 ]; then
     echo "No ASAR feature selected; the copied app bundle does not need JavaScript changes."
     echo "Signing the provider-enabled app for local launch..."
     /usr/bin/codesign --force --sign - "$APP_PATH"
@@ -230,13 +236,7 @@ echo "Step 2: Extracting app.asar..."
 echo "  Extracted to: $EXTRACTED_DIR"
 echo ""
 
-# Step 3 & 4: Find the target file and patch it (all in Node.js for robustness
-# with minified files that have extremely long lines)
-echo "Step 3: Searching for model picker slider arrays..."
-echo "Step 4: Replacing slider arrays with custom points..."
-echo ""
-
-# Pass slider points as a newline-delimited string
+# Step 3 & 4: Optional model-slider ASAR transforms (Node.js for long minified lines)
 SLIDER_POINTS_STR=$(printf '%s\n' "${SLIDER_POINTS[@]}")
 ACTIVE_SLIDER_POINTS_STR=$(printf '%s\n' "${ACTIVE_SLIDER_POINTS[@]}")
 AVAILABLE_SLIDER_POINTS=()
@@ -253,6 +253,11 @@ for point in "${SLIDER_POINTS[@]}"; do
     fi
 done
 AVAILABLE_SLIDER_POINTS_STR=$(printf '%s\n' "${AVAILABLE_SLIDER_POINTS[@]}")
+
+if has_feature "custom-model-slider"; then
+echo "Step 3: Searching for model picker slider arrays..."
+echo "Step 4: Replacing slider arrays with custom points..."
+echo ""
 
 if ! PATCH_RESULT=$("$NODE_BIN" -e '
 const fs = require("fs");
@@ -481,6 +486,27 @@ fi
 
 echo "$PATCH_RESULT"
 echo ""
+else
+    echo "Step 3–4: Custom model slider not selected; skipping slider transforms."
+    echo ""
+fi
+
+if has_feature "hide-profile-menu-items"; then
+    HIDE_MENU_PATCHER="$SCRIPT_DIR/patch-hide-profile-menu.js"
+    if [ ! -f "$HIDE_MENU_PATCHER" ]; then
+        echo "ERROR: Hide-profile-menu patcher is missing: $HIDE_MENU_PATCHER"
+        exit 1
+    fi
+    echo "Step 4b: Hiding Show pet and Invite a friend from the profile dropdown..."
+    if ! HIDE_MENU_RESULT=$("$NODE_BIN" "$HIDE_MENU_PATCHER" "$EXTRACTED_DIR"); then
+        echo ""
+        echo "ERROR: Failed to hide profile menu items."
+        echo "$HIDE_MENU_RESULT"
+        exit 1
+    fi
+    echo "$HIDE_MENU_RESULT"
+    echo ""
+fi
 
 # Step 5: Patch the development banner in index.html
 echo "Step 5: Patching development banner in index.html..."
@@ -551,11 +577,18 @@ echo "Step 7: Verifying..."
 VERIFY_DIR="$WORK_DIR/verify"
 "$NPX_BIN" --yes @electron/asar extract "$PACKED_ASAR" "$VERIFY_DIR"
 
+VERIFY_WANT_SLIDER=0
+VERIFY_WANT_HIDE_MENU=0
+has_feature "custom-model-slider" && VERIFY_WANT_SLIDER=1
+has_feature "hide-profile-menu-items" && VERIFY_WANT_HIDE_MENU=1
+
 VERIFY_RESULT=$("$NODE_BIN" -e '
 const fs = require("fs");
 const path = require("path");
 const verifyDir = process.argv[1];
 const defaultSliderPoint = process.argv[2];
+const wantSlider = process.argv[4] === "1";
+const wantHideMenu = process.argv[5] === "1";
 
 function findJsFiles(dir) {
     let results = [];
@@ -577,10 +610,11 @@ let sliderOk = false;
 let settingsOk = false;
 let liveUpdateOk = false;
 let defaultPointOk = false;
+let hideMenuOk = false;
 for (const file of jsFiles) {
     const content = fs.readFileSync(file, "utf8");
     const expectedIds = process.argv[3].split("\n").filter(Boolean);
-    if (expectedIds.every(point => content.includes(point))) {
+    if (expectedIds.length && expectedIds.every(point => content.includes(point))) {
         sliderOk = true;
     }
     if (content.includes("__chatgptPatcherSettingsInstalled") && content.includes("chatgpt-patcher.slider-order")) {
@@ -592,6 +626,9 @@ for (const file of jsFiles) {
     if (content.includes(`e.id===\`${defaultSliderPoint}\``)) {
         defaultPointOk = true;
     }
+    if (content.includes("__chatgptPatcherHideProfileMenuInstalled")) {
+        hideMenuOk = true;
+    }
 }
 
 // Check banner in index.html
@@ -602,19 +639,26 @@ if (fs.existsSync(indexPath)) {
     bannerOk = html.includes("Development Build") && html.includes("dev-banner-toggle");
 }
 
-if (sliderOk && settingsOk && liveUpdateOk && defaultPointOk && bannerOk) {
-    console.log("OK:slider+settings+live-update+default-point+banner");
-} else if (sliderOk) {
-    console.log("PARTIAL:slider-only");
-} else if (bannerOk) {
-    console.log("PARTIAL:banner-only");
-} else {
-    console.log("FAIL");
+const checks = [];
+let ok = bannerOk;
+checks.push(bannerOk ? "banner" : "banner-missing");
+
+if (wantSlider) {
+    const sliderPass = sliderOk && settingsOk && liveUpdateOk && defaultPointOk;
+    ok = ok && sliderPass;
+    checks.push(sliderPass ? "slider+settings+live-update+default-point" : "slider-incomplete");
 }
-' "$VERIFY_DIR" "$DEFAULT_SLIDER_POINT" "$SLIDER_POINTS_STR")
+
+if (wantHideMenu) {
+    ok = ok && hideMenuOk;
+    checks.push(hideMenuOk ? "hide-profile-menu" : "hide-profile-menu-missing");
+}
+
+console.log((ok ? "OK:" : "FAIL:") + checks.join("+"));
+' "$VERIFY_DIR" "$DEFAULT_SLIDER_POINT" "$SLIDER_POINTS_STR" "$VERIFY_WANT_SLIDER" "$VERIFY_WANT_HIDE_MENU")
 
 if [[ "$VERIFY_RESULT" == "OK:"* ]]; then
-    echo "  Verification OK: slider, settings tab, live updates, default point, and development banner verified."
+    echo "  Verification OK: ${VERIFY_RESULT#OK:}"
 else
     echo "  ERROR: Verification failed — $VERIFY_RESULT"
     echo "  Original app.asar was left unchanged."
@@ -703,8 +747,10 @@ echo "Step 10: Clearing inherited quarantine metadata from the patched copy..."
 echo "  Cleared."
 echo ""
 
-"$NODE_BIN" "$SCRIPT_DIR/patch-labels.js" catalog "$ACTIVE_SLIDER_POINTS_STR" "$AVAILABLE_SLIDER_POINTS_STR"
-echo ""
+if has_feature "custom-model-slider"; then
+    "$NODE_BIN" "$SCRIPT_DIR/patch-labels.js" catalog "$ACTIVE_SLIDER_POINTS_STR" "$AVAILABLE_SLIDER_POINTS_STR"
+    echo ""
+fi
 if [ "$SKIP_BACKUP" != "1" ]; then
     echo "Backup of original: $ASAR_BACKUP"
     echo "Info.plist backup:   $INFO_PLIST_BACKUP"

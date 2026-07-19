@@ -1,6 +1,6 @@
 # ChatGPT Patcher
 
-**ChatGPT Patcher** is a macOS tool that patches the official **ChatGPT / Codex desktop app** with a **custom model slider**, optional **OpenCode Go models**, and a safe **patched copy** workflow — without modifying your original installation.
+**ChatGPT Patcher** is a macOS tool that patches the official **ChatGPT / Codex desktop app** with a **custom model slider**, optional **profile-menu cleanup**, optional **OpenCode Go models**, and a safe **patched copy** workflow — without modifying your original installation.
 
 Customize the ChatGPT model picker on Mac, reorder reasoning-effort points, hide unused models, and build a verified `ChatGPT (Patched).app` you can launch from Finder.
 
@@ -36,9 +36,21 @@ The launcher builds the native UI with Swift (no Xcode required) and bundles all
 | Feature | What it does |
 | --- | --- |
 | **Custom Model Slider & Configuration** | Replaces the composer model slider with a curated catalog, adds a **Model slider** settings tab, and lets you reorder, hide, and restore points. |
+| **Hide Profile Menu Items** | Removes **Show pet** and **Invite a friend** from the Codex account / profile dropdown. |
 | **OpenCode Go Provider & Models** | Embeds a localhost Responses-to-Chat-Completions adapter and 20 third-party models as a **separate per-thread provider**, without changing your global `~/.codex` config. |
 
-You can enable either feature alone or both together. At least one must be selected before patching.
+You can enable any combination of features. At least one must be selected before patching.
+
+---
+
+### Hide Profile Menu Items
+
+Removes clutter from the Codex account menu (the popup opened from your avatar / username in the sidebar):
+
+- **Show pet** / **Hide pet**
+- **Invite a friend** / **Invite a coworker**
+
+Usage remaining, Settings, and Log out stay available. This only changes the profile dropdown in the patched copy — command-palette and native menu pet entries are left alone.
 
 ---
 

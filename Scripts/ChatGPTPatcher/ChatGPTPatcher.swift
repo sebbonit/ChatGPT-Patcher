@@ -9,6 +9,7 @@ private let savedDestinationDirectoryPathKey = "patchedCodexDestinationDirectory
 
 private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
     case customModelSlider = "custom-model-slider"
+    case hideProfileMenuItems = "hide-profile-menu-items"
     case openCodeGoProvider = "opencodego-provider"
 
     var id: String { rawValue }
@@ -16,6 +17,7 @@ private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .customModelSlider: "Custom Model Slider & Configuration"
+        case .hideProfileMenuItems: "Hide Profile Menu Items"
         case .openCodeGoProvider: "OpenCode Go Provider & Models"
         }
     }
@@ -24,6 +26,8 @@ private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .customModelSlider:
             "Reorder model and reasoning-effort points, hide unused options, and keep your layout saved in Settings."
+        case .hideProfileMenuItems:
+            "Remove Show pet and Invite a friend from the Codex account menu for a cleaner profile dropdown."
         case .openCodeGoProvider:
             "Add OpenCode Go as a separate per-thread provider while keeping the existing OpenAI slider models."
         }
@@ -32,6 +36,7 @@ private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
     var symbolName: String {
         switch self {
         case .customModelSlider: "slider.horizontal.3"
+        case .hideProfileMenuItems: "person.crop.circle.badge.minus"
         case .openCodeGoProvider: "point.3.connected.trianglepath.dotted"
         }
     }
@@ -39,6 +44,7 @@ private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
     var detailTags: [String] {
         switch self {
         case .customModelSlider: ["Drag to reorder", "Live apply", "Persistent"]
+        case .hideProfileMenuItems: ["Show pet", "Invite a friend", "Profile menu"]
         case .openCodeGoProvider: ["Separate provider", "20 models", "OpenCode auth"]
         }
     }
@@ -487,6 +493,8 @@ private final class PatcherViewModel: ObservableObject {
         switch feature {
         case .customModelSlider:
             return "  • Custom Model Slider — default track: 5.6 Luna + 5.6 Sol (Terra/OpenCode in Settings)"
+        case .hideProfileMenuItems:
+            return "  • Hide Profile Menu Items — remove Show pet and Invite a friend from the account menu"
         case .openCodeGoProvider:
             return "  • OpenCode Go Provider — 20 third-party models (separate per-thread provider)"
         }

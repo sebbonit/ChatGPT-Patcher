@@ -23,6 +23,7 @@ mkdir -p "$MACOS_PATH" "$RESOURCES_PATH"
 
 cp "$SCRIPT_DIR/Info.plist" "$CONTENTS_PATH/Info.plist"
 cp "$SCRIPT_DIR/../patch-model-slider.sh" "$RESOURCES_PATH/patch-model-slider.sh"
+cp "$SCRIPT_DIR/../patch-hide-profile-menu.js" "$RESOURCES_PATH/patch-hide-profile-menu.js"
 cp "$SCRIPT_DIR/../patch-labels.js" "$RESOURCES_PATH/patch-labels.js"
 cp "$SCRIPT_DIR/../install-opencodego-provider.sh" "$RESOURCES_PATH/install-opencodego-provider.sh"
 cp "$SCRIPT_DIR/../opencodego-adapter.js" "$RESOURCES_PATH/opencodego-adapter.js"

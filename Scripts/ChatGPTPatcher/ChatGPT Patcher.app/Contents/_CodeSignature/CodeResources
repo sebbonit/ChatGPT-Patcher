@@ -36,13 +36,17 @@
 		<data>
 		h6UzpjUB95F6WaaHoUVCkGTgRjs=
 		</data>
+		<key>Resources/patch-hide-profile-menu.js</key>
+		<data>
+		CmA4bM5LMs0QTTq92tORjxzLtSU=
+		</data>
 		<key>Resources/patch-labels.js</key>
 		<data>
 		Lf1BU5Qdb9wem8XMwkFyMS9+Usk=
 		</data>
 		<key>Resources/patch-model-slider.sh</key>
 		<data>
-		K1c1Vzr43lJd0JKTK5ZXQ/txs+8=
+		5gnJBPi6mqzsoxOYS4FA/MHCQiw=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -103,6 +107,13 @@
 			um53MnlEhfG3bqEX8vDfE/qP/8IRHT7P+RO71BhGCgk=
 			</data>
 		</dict>
+		<key>Resources/patch-hide-profile-menu.js</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			x6bvNNMHL6BLOJOfdHDk55qP6Kelwn6H5JZy1F2qHJw=
+			</data>
+		</dict>
 		<key>Resources/patch-labels.js</key>
 		<dict>
 			<key>hash2</key>
@@ -114,7 +125,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			m7qIr7H5lEO+BL4DAKw5dixHD8GXok7Cp8KEuAhzIPQ=
+			EcWPWtLJ1MUxY7l7MHYM0m1s73i7OkrO5QZAYKODHT4=
 			</data>
 		</dict>
 	</dict>
