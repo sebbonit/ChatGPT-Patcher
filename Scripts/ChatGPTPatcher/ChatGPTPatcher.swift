@@ -216,10 +216,12 @@ private final class PatcherViewModel: ObservableObject {
     @Published var recoverableStagingURL: URL?
     @Published var selectedFeatures: Set<PatchFeature> = Set(PatchFeature.allCases)
     @Published var updateState: UpdateState = .checking
+    @Published var isUpdateAlertPresented = false
 
     private var activeProcess: Process?
     private var updateDownloadTask: URLSessionDownloadTask?
     private var latestRelease: GitHubRelease?
+    private var hasPresentedUpdateAlert = false
     private var hasExplicitDestination = false
 
     var installedVersion: String {
@@ -341,9 +343,14 @@ private final class PatcherViewModel: ObservableObject {
                         return
                     }
                     self.latestRelease = release
-                    self.updateState = self.isVersion(version, newerThan: self.installedVersion)
+                    let updateIsAvailable = self.isVersion(version, newerThan: self.installedVersion)
+                    self.updateState = updateIsAvailable
                         ? .available(version: version)
                         : .upToDate
+                    if updateIsAvailable, !self.hasPresentedUpdateAlert, !self.isRunning {
+                        self.hasPresentedUpdateAlert = true
+                        self.isUpdateAlertPresented = true
+                    }
                 case let .failure(error):
                     self.updateState = .failed(message: error.localizedDescription)
                 }
@@ -1257,6 +1264,14 @@ private struct ContentView: View {
             }
         } message: {
             Text(patcher.confirmationMessage)
+        }
+        .alert("Update available", isPresented: $patcher.isUpdateAlertPresented) {
+            Button("Install Update") {
+                patcher.installAvailableUpdate()
+            }
+            Button("Later", role: .cancel) {}
+        } message: {
+            Text("ChatGPT Patcher \(patcher.availableUpdateVersion ?? "new version") is available. Install it now? The app will restart automatically to finish updating.")
         }
     }
 
