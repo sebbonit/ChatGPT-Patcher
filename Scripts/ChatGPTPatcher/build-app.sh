@@ -5,23 +5,46 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="ChatGPT Patcher.app"
-APP_PATH="$SCRIPT_DIR/$APP_NAME"
+APP_PATH="${PATCHER_APP_PATH:-$SCRIPT_DIR/$APP_NAME}"
 CONTENTS_PATH="$APP_PATH/Contents"
 MACOS_PATH="$CONTENTS_PATH/MacOS"
 RESOURCES_PATH="$CONTENTS_PATH/Resources"
 EXECUTABLE_PATH="$MACOS_PATH/ChatGPT Patcher"
+PATCHER_VERSION="${PATCHER_VERSION:-1.0.0}"
+PATCHER_BUILD_NUMBER="${PATCHER_BUILD_NUMBER:-1}"
+PATCHER_ARCHS="${PATCHER_ARCHS:-$(uname -m)}"
 
-mkdir -p "$MACOS_PATH" "$RESOURCES_PATH"
+mkdir -p "$(dirname "$APP_PATH")" "$MACOS_PATH" "$RESOURCES_PATH"
 
-/usr/bin/swiftc \
-  -parse-as-library \
-  "$SCRIPT_DIR/ChatGPTPatcher.swift" \
-  -o "$EXECUTABLE_PATH" \
-  -framework AppKit \
-  -framework SwiftUI \
-  -framework UniformTypeIdentifiers
+if [[ "$PATCHER_ARCHS" == "universal" ]]; then
+  for architecture in arm64 x86_64; do
+    /usr/bin/swiftc \
+      -parse-as-library \
+      -target "$architecture-apple-macos13.0" \
+      "$SCRIPT_DIR/ChatGPTPatcher.swift" \
+      -o "$EXECUTABLE_PATH.$architecture" \
+      -framework AppKit \
+      -framework SwiftUI \
+      -framework UniformTypeIdentifiers
+  done
+  /usr/bin/lipo -create \
+    "$EXECUTABLE_PATH.arm64" \
+    "$EXECUTABLE_PATH.x86_64" \
+    -output "$EXECUTABLE_PATH"
+  rm -f "$EXECUTABLE_PATH.arm64" "$EXECUTABLE_PATH.x86_64"
+else
+  /usr/bin/swiftc \
+    -parse-as-library \
+    "$SCRIPT_DIR/ChatGPTPatcher.swift" \
+    -o "$EXECUTABLE_PATH" \
+    -framework AppKit \
+    -framework SwiftUI \
+    -framework UniformTypeIdentifiers
+fi
 
 cp "$SCRIPT_DIR/Info.plist" "$CONTENTS_PATH/Info.plist"
+/usr/bin/plutil -replace CFBundleShortVersionString -string "$PATCHER_VERSION" "$CONTENTS_PATH/Info.plist"
+/usr/bin/plutil -replace CFBundleVersion -string "$PATCHER_BUILD_NUMBER" "$CONTENTS_PATH/Info.plist"
 cp "$SCRIPT_DIR/../patch-model-slider.sh" "$RESOURCES_PATH/patch-model-slider.sh"
 cp "$SCRIPT_DIR/../patch-hide-profile-menu.js" "$RESOURCES_PATH/patch-hide-profile-menu.js"
 cp "$SCRIPT_DIR/../patch-labels.js" "$RESOURCES_PATH/patch-labels.js"

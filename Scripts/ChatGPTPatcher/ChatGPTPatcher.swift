@@ -6,6 +6,10 @@ import UniformTypeIdentifiers
 private let expectedBundleIdentifier = "com.openai.codex"
 private let savedTargetPathKey = "selectedCodexAppPath"
 private let savedDestinationDirectoryPathKey = "patchedCodexDestinationDirectory"
+private let updaterRepository = "sebbonit/ChatGPT-Patcher"
+private let updaterReleaseAPIURL = URL(string: "https://api.github.com/repos/\(updaterRepository)/releases/latest")!
+private let updaterAssetName = "ChatGPT-Patcher-macos.zip"
+private let updaterChecksumAssetName = "ChatGPT-Patcher-macos.zip.sha256"
 
 private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
     case customModelSlider = "custom-model-slider"
@@ -76,6 +80,50 @@ private enum StatusLevel {
         case .working: .accentColor
         case .warning: .orange
         case .error: .red
+        }
+    }
+}
+
+private enum UpdateState: Equatable {
+    case checking
+    case upToDate
+    case available(version: String)
+    case downloading(version: String)
+    case failed(message: String)
+}
+
+private struct GitHubRelease: Decodable {
+    let tagName: String
+    let assets: [GitHubReleaseAsset]
+
+    enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case assets
+    }
+}
+
+private struct GitHubReleaseAsset: Decodable {
+    let name: String
+    let browserDownloadURL: URL
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadURL = "browser_download_url"
+    }
+}
+
+private struct PreparedUpdate {
+    let newAppURL: URL
+    let targetURL: URL
+    let updateRootURL: URL
+}
+
+private enum UpdateError: LocalizedError {
+    case message(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .message(message): message
         }
     }
 }
@@ -167,9 +215,31 @@ private final class PatcherViewModel: ObservableObject {
     @Published var lastPatchedCopyURL: URL?
     @Published var recoverableStagingURL: URL?
     @Published var selectedFeatures: Set<PatchFeature> = Set(PatchFeature.allCases)
+    @Published var updateState: UpdateState = .checking
 
     private var activeProcess: Process?
+    private var updateDownloadTask: URLSessionDownloadTask?
+    private var latestRelease: GitHubRelease?
     private var hasExplicitDestination = false
+
+    var installedVersion: String {
+        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0.0.0"
+    }
+
+    var availableUpdateVersion: String? {
+        guard case let .available(version) = updateState else { return nil }
+        return version
+    }
+
+    var isCheckingForUpdates: Bool {
+        if case .checking = updateState { return true }
+        return false
+    }
+
+    var isDownloadingUpdate: Bool {
+        if case .downloading = updateState { return true }
+        return false
+    }
 
     var willReplaceDestination: Bool {
         guard let destinationURL, let source = selectedTarget else { return false }
@@ -232,6 +302,321 @@ private final class PatcherViewModel: ObservableObject {
         }
 
         updateStatus()
+        checkForUpdates()
+    }
+
+    func checkForUpdates() {
+        updateDownloadTask?.cancel()
+        latestRelease = nil
+        updateState = .checking
+
+        var request = URLRequest(url: updaterReleaseAPIURL)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("ChatGPT-Patcher/\(installedVersion)", forHTTPHeaderField: "User-Agent")
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            let result: Result<GitHubRelease, Error>
+            if let error {
+                result = .failure(error)
+            } else if let httpResponse = response as? HTTPURLResponse,
+                      !(200..<300).contains(httpResponse.statusCode) {
+                result = .failure(UpdateError.message("GitHub returned HTTP \(httpResponse.statusCode)."))
+            } else if let data {
+                do {
+                    result = .success(try JSONDecoder().decode(GitHubRelease.self, from: data))
+                } catch {
+                    result = .failure(UpdateError.message("GitHub returned an unreadable release response."))
+                }
+            } else {
+                result = .failure(UpdateError.message("GitHub returned an empty response."))
+            }
+
+            DispatchQueue.main.async {
+                guard let self else { return }
+                switch result {
+                case let .success(release):
+                    let version = self.normalizedVersion(release.tagName)
+                    guard release.assets.contains(where: { $0.name == updaterAssetName }) else {
+                        self.updateState = .failed(message: "The latest release does not contain the macOS app zip.")
+                        return
+                    }
+                    self.latestRelease = release
+                    self.updateState = self.isVersion(version, newerThan: self.installedVersion)
+                        ? .available(version: version)
+                        : .upToDate
+                case let .failure(error):
+                    self.updateState = .failed(message: error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+
+    func installAvailableUpdate() {
+        guard !isRunning,
+              let release = latestRelease,
+              let asset = release.assets.first(where: { $0.name == updaterAssetName }),
+              case let .available(version) = updateState else {
+            return
+        }
+
+        updateState = .downloading(version: version)
+        var request = URLRequest(url: asset.browserDownloadURL)
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
+        request.setValue("ChatGPT-Patcher/\(installedVersion)", forHTTPHeaderField: "User-Agent")
+
+        updateDownloadTask = URLSession.shared.downloadTask(with: request) { [weak self] temporaryURL, response, error in
+            guard let self else { return }
+            guard let temporaryURL,
+                  error == nil,
+                  let httpResponse = response as? HTTPURLResponse,
+                  (200..<300).contains(httpResponse.statusCode) else {
+                let message = error?.localizedDescription ?? "GitHub did not return the update archive."
+                DispatchQueue.main.async {
+                    self.updateState = .failed(message: message)
+                }
+                return
+            }
+
+            do {
+                let persistentURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("ChatGPT-Patcher-download-\(UUID().uuidString).zip")
+                try FileManager.default.moveItem(at: temporaryURL, to: persistentURL)
+                self.verifyChecksumAndPrepareUpdate(temporaryURL: persistentURL, release: release)
+            } catch {
+                DispatchQueue.main.async {
+                    self.updateState = .failed(message: "Could not save the downloaded update: \(error.localizedDescription)")
+                }
+            }
+        }
+        updateDownloadTask?.resume()
+    }
+
+    private func verifyChecksumAndPrepareUpdate(temporaryURL: URL, release: GitHubRelease) {
+        let checksumAsset = release.assets.first(where: { $0.name == updaterChecksumAssetName })
+
+        let finish: (Result<String?, Error>) -> Void = { [weak self] checksumResult in
+            guard let self else { return }
+            let expectedChecksum: String?
+            switch checksumResult {
+            case let .success(checksum):
+                expectedChecksum = checksum
+            case let .failure(error):
+                try? FileManager.default.removeItem(at: temporaryURL)
+                DispatchQueue.main.async {
+                    self.updateState = .failed(message: error.localizedDescription)
+                }
+                return
+            }
+
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    if let expectedChecksum,
+                       !self.archiveMatchesChecksum(at: temporaryURL, expected: expectedChecksum) {
+                        throw UpdateError.message("The downloaded update failed its SHA-256 check.")
+                    }
+
+                    let preparedUpdate = try self.prepareUpdate(at: temporaryURL, release: release)
+                    DispatchQueue.main.async {
+                        do {
+                            try self.launchUpdateHelper(for: preparedUpdate)
+                            self.appendOutput("Downloaded ChatGPT Patcher \(self.normalizedVersion(release.tagName)). The app will restart to finish updating.\n")
+                            NSApp.terminate(nil)
+                        } catch {
+                            self.updateState = .failed(message: error.localizedDescription)
+                        }
+                    }
+                } catch {
+                    try? FileManager.default.removeItem(at: temporaryURL)
+                    DispatchQueue.main.async {
+                        self.updateState = .failed(message: error.localizedDescription)
+                    }
+                }
+            }
+        }
+
+        guard let checksumAsset else {
+            finish(.success(nil))
+            return
+        }
+
+        var request = URLRequest(url: checksumAsset.browserDownloadURL)
+        request.setValue("text/plain", forHTTPHeaderField: "Accept")
+        request.setValue("ChatGPT-Patcher/\(installedVersion)", forHTTPHeaderField: "User-Agent")
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data,
+                  error == nil,
+                  let httpResponse = response as? HTTPURLResponse,
+                  (200..<300).contains(httpResponse.statusCode),
+                  let checksumText = String(data: data, encoding: .utf8),
+                  let expectedChecksum = checksumText.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" }).first else {
+                finish(.failure(UpdateError.message("Could not download the update checksum.")))
+                return
+            }
+            finish(.success(String(expectedChecksum)))
+        }.resume()
+    }
+
+    private func prepareUpdate(at temporaryURL: URL, release: GitHubRelease) throws -> PreparedUpdate {
+        let fileManager = FileManager.default
+        let updateRoot = fileManager.temporaryDirectory
+            .appendingPathComponent("ChatGPT-Patcher-update-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: updateRoot, withIntermediateDirectories: true)
+
+        do {
+            let archiveURL = updateRoot.appendingPathComponent(updaterAssetName)
+            try fileManager.moveItem(at: temporaryURL, to: archiveURL)
+            let extractedURL = updateRoot.appendingPathComponent("extracted", isDirectory: true)
+            try fileManager.createDirectory(at: extractedURL, withIntermediateDirectories: true)
+            try runCommand("/usr/bin/ditto", arguments: ["-x", "-k", archiveURL.path, extractedURL.path])
+
+            guard let appURL = findUpdaterApp(in: extractedURL),
+                  let appBundle = Bundle(url: appURL),
+                  appBundle.bundleIdentifier == "local.chatgpt.patcher" else {
+                throw UpdateError.message("The downloaded archive does not contain ChatGPT Patcher.")
+            }
+
+            let expectedVersion = normalizedVersion(release.tagName)
+            let downloadedVersion = (appBundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
+                ?? (appBundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String)
+            guard downloadedVersion.map({ normalizedVersion($0) == expectedVersion }) == true else {
+                throw UpdateError.message("The downloaded app version does not match the GitHub release.")
+            }
+
+            return PreparedUpdate(
+                newAppURL: appURL,
+                targetURL: try updateInstallTarget(),
+                updateRootURL: updateRoot
+            )
+        } catch {
+            try? fileManager.removeItem(at: updateRoot)
+            throw error
+        }
+    }
+
+    private func launchUpdateHelper(for update: PreparedUpdate) throws {
+        let helperURL = update.updateRootURL.appendingPathComponent("install-update.sh")
+        let helperScript = """
+        #!/bin/bash
+        set -euo pipefail
+        target="$1"
+        new_app="$2"
+        update_root="$3"
+        sleep 1
+        backup="${target}.update-backup"
+        rm -rf "$backup"
+        if [[ -e "$target" ]]; then
+            mv "$target" "$backup"
+        fi
+        if ! mv "$new_app" "$target"; then
+            if [[ -e "$backup" ]]; then mv "$backup" "$target"; fi
+            exit 1
+        fi
+        rm -rf "$backup" "$update_root"
+        open "$target"
+        """
+        try helperScript.write(to: helperURL, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: 0o700)],
+            ofItemAtPath: helperURL.path
+        )
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = [helperURL.path, update.targetURL.path, update.newAppURL.path, update.updateRootURL.path]
+        try process.run()
+    }
+
+    private func findUpdaterApp(in directory: URL) -> URL? {
+        let directURL = directory.appendingPathComponent("ChatGPT Patcher.app")
+        if Bundle(url: directURL)?.bundleIdentifier == "local.chatgpt.patcher" {
+            return directURL
+        }
+
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return nil
+        }
+        for case let url as URL in enumerator where url.pathExtension.lowercased() == "app" {
+            if Bundle(url: url)?.bundleIdentifier == "local.chatgpt.patcher" {
+                return url
+            }
+            enumerator.skipDescendants()
+        }
+        return nil
+    }
+
+    private func updateInstallTarget() throws -> URL {
+        let fileManager = FileManager.default
+        let currentURL = Bundle.main.bundleURL.standardizedFileURL
+        let currentParent = currentURL.deletingLastPathComponent()
+        if fileManager.isWritableFile(atPath: currentParent.path) {
+            return currentURL
+        }
+
+        let userApplicationsURL = URL(fileURLWithPath: ("~/Applications" as NSString).expandingTildeInPath)
+        try fileManager.createDirectory(at: userApplicationsURL, withIntermediateDirectories: true)
+        guard fileManager.isWritableFile(atPath: userApplicationsURL.path) else {
+            throw UpdateError.message("The current app folder is not writable, and ~/Applications is unavailable.")
+        }
+        return userApplicationsURL.appendingPathComponent("ChatGPT Patcher.app")
+    }
+
+    private func archiveMatchesChecksum(at url: URL, expected: String) -> Bool {
+        let process = Process()
+        let outputPipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/shasum")
+        process.arguments = ["-a", "256", url.path]
+        process.standardOutput = outputPipe
+        process.standardError = Pipe()
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0,
+                  let output = String(data: outputPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8),
+                  let actual = output.split(whereSeparator: { $0 == " " || $0 == "\t" }).first else {
+                return false
+            }
+            return actual.caseInsensitiveCompare(expected.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
+        } catch {
+            return false
+        }
+    }
+
+    private func runCommand(_ executable: String, arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw UpdateError.message("Could not unpack the downloaded update.")
+        }
+    }
+
+    private func normalizedVersion(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "^v", with: "", options: .regularExpression)
+    }
+
+    private func isVersion(_ candidate: String, newerThan installed: String) -> Bool {
+        func components(_ value: String) -> [Int] {
+            normalizedVersion(value)
+                .split(separator: ".", omittingEmptySubsequences: false)
+                .map { Int($0.split(whereSeparator: { !$0.isNumber }).first ?? "0") ?? 0 }
+        }
+        let candidateComponents = components(candidate)
+        let installedComponents = components(installed)
+        for index in 0..<max(candidateComponents.count, installedComponents.count) {
+            let candidatePart = index < candidateComponents.count ? candidateComponents[index] : 0
+            let installedPart = index < installedComponents.count ? installedComponents[index] : 0
+            if candidatePart != installedPart {
+                return candidatePart > installedPart
+            }
+        }
+        return false
     }
 
     func refreshTargets() {
@@ -1084,9 +1469,60 @@ private struct ContentView: View {
 
             Spacer()
 
-            Label("On-device", systemImage: "lock")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                updateControl
+
+                Label("On-device", systemImage: "lock")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var updateControl: some View {
+        switch patcher.updateState {
+        case .checking:
+            HStack(spacing: 5) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text("Checking…")
+            }
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+        case .upToDate:
+            Button("Check for updates") {
+                patcher.checkForUpdates()
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+            .help("Installed version \(patcher.installedVersion)")
+        case let .available(version):
+            Button {
+                patcher.installAvailableUpdate()
+            } label: {
+                Label("Update to \(version)", systemImage: "arrow.down.circle.fill")
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(Color.accentColor)
+        case let .downloading(version):
+            HStack(spacing: 5) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text("Downloading \(version)…")
+            }
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+        case let .failed(message):
+            Button("Retry update check") {
+                patcher.checkForUpdates()
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+            .help(message)
         }
     }
 
@@ -1156,7 +1592,7 @@ private struct ContentView: View {
                 .onAppear {
                     DispatchQueue.main.async { proxy.scrollTo("patch-log-bottom", anchor: .bottom) }
                 }
-                .onChange(of: patcher.output) { _, _ in
+                .onReceive(patcher.$output) { _ in
                     DispatchQueue.main.async { proxy.scrollTo("patch-log-bottom", anchor: .bottom) }
                 }
             }
