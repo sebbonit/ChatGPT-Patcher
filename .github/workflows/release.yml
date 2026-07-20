@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic release version, for example 1.0.1"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -19,11 +25,17 @@ jobs:
       - name: Read release version
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          version="${version#v}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Tag must contain a semantic version, for example v1.2.3; got $GITHUB_REF_NAME" >&2
+            echo "Version must be semantic, for example 1.2.3; got $version" >&2
             exit 1
           fi
+          echo "RELEASE_TAG=v$version" >> "$GITHUB_ENV"
           echo "PATCHER_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Build application
@@ -47,8 +59,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" \
             "dist/ChatGPT-Patcher-macos.zip" \
             "dist/ChatGPT-Patcher-macos.zip.sha256" \
+            --target "$GITHUB_SHA" \
             --title "ChatGPT Patcher $PATCHER_VERSION" \
             --generate-notes

@@ -31,7 +31,7 @@ The launcher builds the native UI with Swift (no Xcode required) and bundles all
 
 ### Releases and automatic updates
 
-Pushing a semantic-version tag such as `v1.2.3` starts the GitHub Actions release workflow. It builds a universal macOS app bundle for Apple silicon and Intel, publishes `ChatGPT-Patcher-macos.zip`, and publishes its SHA-256 checksum alongside it.
+Pushing a semantic-version tag such as `v1.2.3`, or choosing **Run workflow** and entering a version, starts the GitHub Actions release workflow. It builds a universal macOS app bundle for Apple silicon and Intel, publishes `ChatGPT-Patcher-macos.zip`, and publishes its SHA-256 checksum alongside it.
 
 The native patcher checks the repository’s latest GitHub release when it opens. If a newer release is available, choose **Update** in the top-right corner; the downloaded archive is checksum-verified, installed, and reopened automatically. If the app is running from a protected folder such as `/Applications`, the updater falls back to `~/Applications` when needed.
 
