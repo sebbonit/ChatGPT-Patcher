@@ -1,0 +1,54 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Read release version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must contain a semantic version, for example v1.2.3; got $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          echo "PATCHER_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build application
+        run: |
+          mkdir -p dist
+          PATCHER_APP_PATH="$GITHUB_WORKSPACE/dist/ChatGPT Patcher.app" \
+            PATCHER_ARCHS=universal \
+            PATCHER_VERSION="$PATCHER_VERSION" \
+            PATCHER_BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
+            ./Scripts/ChatGPTPatcher/build-app.sh
+
+      - name: Package application
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/ChatGPT Patcher.app" \
+            "dist/ChatGPT-Patcher-macos.zip"
+          shasum -a 256 "dist/ChatGPT-Patcher-macos.zip" \
+            > "dist/ChatGPT-Patcher-macos.zip.sha256"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/ChatGPT-Patcher-macos.zip" \
+            "dist/ChatGPT-Patcher-macos.zip.sha256" \
+            --title "ChatGPT Patcher $PATCHER_VERSION" \
+            --generate-notes
