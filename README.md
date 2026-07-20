@@ -43,7 +43,7 @@ The native patcher checks the repository’s latest GitHub release when it opens
 | --- | --- |
 | **Custom Model Slider & Configuration** | Replaces the composer model slider with a curated catalog, adds a **Model slider** settings tab, and lets you reorder, hide, and restore points. |
 | **Hide Profile Menu Items** | Removes **Show pet** and **Invite a friend** from the Codex account / profile dropdown. |
-| **OpenCode Go Provider & Models** | Embeds a localhost Responses-to-Chat-Completions adapter and 20 third-party models as a **separate per-thread provider**, without changing your global `~/.codex` config. |
+| **OpenCode Go Provider & Models** | Embeds a localhost Responses-to-Chat-Completions adapter and 22 third-party models as a **separate per-thread provider**, without changing your global `~/.codex` config. |
 
 You can enable any combination of features. At least one must be selected before patching.
 
@@ -96,6 +96,7 @@ When the OpenCode Go feature is also enabled, its models are added to the **Avai
 - Most OpenCode models expose no effort choices.
 - **GLM-5.2** — high, max
 - **DeepSeek V4 Pro** — max
+- **Kimi K3** — low, high, max
 
 ---
 
@@ -103,9 +104,9 @@ When the OpenCode Go feature is also enabled, its models are added to the **Avai
 
 Adds OpenCode Go as an isolated provider inside the patched app bundle. Your installed Codex app, terminal Codex, and `~/.codex/config.toml` are **never modified**.
 
-**Included models (20):**
+**Included models (22):**
 
-GLM-5, GLM-5.1, GLM-5.2, Kimi K2.5, Kimi K2.6, Kimi K2.7 Code, MiMo V2 Pro, MiMo V2 Omni, MiMo V2.5 Pro, MiMo V2.5, MiniMax M2.5, MiniMax M2.7, MiniMax M3, Qwen 3.5 Plus, Qwen 3.6 Plus, Qwen 3.7 Plus, Qwen 3.7 Max, DeepSeek V4 Pro, DeepSeek V4 Flash, HY3 Preview
+GLM-5, GLM-5.1, GLM-5.2, Kimi K2.5, Kimi K2.6, Kimi K2.7 Code, MiMo V2 Pro, MiMo V2 Omni, MiMo V2.5 Pro, MiMo V2.5, MiniMax M2.5, MiniMax M2.7, MiniMax M3, Qwen 3.5 Plus, Qwen 3.6 Plus, Qwen 3.7 Plus, Qwen 3.7 Max, DeepSeek V4 Pro, DeepSeek V4 Flash, HY3 Preview, Kimi K3, Grok 4.5
 
 **How it works:**
 
