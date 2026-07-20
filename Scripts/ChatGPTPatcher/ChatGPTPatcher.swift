@@ -45,7 +45,7 @@ private enum PatchFeature: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .customModelSlider: ["Drag to reorder", "Live apply", "Persistent"]
         case .hideProfileMenuItems: ["Show pet", "Invite a friend", "Profile menu"]
-        case .openCodeGoProvider: ["Separate provider", "20 models", "OpenCode auth"]
+        case .openCodeGoProvider: ["Separate provider", "22 models", "OpenCode auth"]
         }
     }
 }
@@ -496,7 +496,7 @@ private final class PatcherViewModel: ObservableObject {
         case .hideProfileMenuItems:
             return "  • Hide Profile Menu Items — remove Show pet and Invite a friend from the account menu"
         case .openCodeGoProvider:
-            return "  • OpenCode Go Provider — 20 third-party models (separate per-thread provider)"
+            return "  • OpenCode Go Provider — 22 third-party models (separate per-thread provider)"
         }
     }
 

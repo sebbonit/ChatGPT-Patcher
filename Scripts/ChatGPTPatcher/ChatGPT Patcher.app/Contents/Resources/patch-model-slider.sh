@@ -146,6 +146,10 @@ if has_feature "opencodego-provider"; then
         "deepseek-v4-pro:max"
         "deepseek-v4-flash:none"
         "hy3-preview:none"
+        "kimi-k3:low"
+        "kimi-k3:high"
+        "kimi-k3:max"
+        "grok-4.5:none"
     )
     # Bump the namespace so an earlier OpenCode-only build cannot restore its
     # stale ordering and re-enable every provider model on first launch.

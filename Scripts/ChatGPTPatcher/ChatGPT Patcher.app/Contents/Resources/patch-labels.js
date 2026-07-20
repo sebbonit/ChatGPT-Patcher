@@ -22,6 +22,8 @@ const OPEN_CODE_LABELS = {
   'deepseek-v4-pro': 'DeepSeek V4 Pro',
   'deepseek-v4-flash': 'DeepSeek V4 Flash',
   'hy3-preview': 'HY3 Preview',
+  'kimi-k3': 'Kimi K3',
+  'grok-4.5': 'Grok 4.5',
 };
 
 function labelFor(model) {

@@ -913,6 +913,111 @@
       "auto_review_model_override": null,
       "tool_mode": "direct",
       "multi_agent_version": "v1"
+    },
+    {
+      "slug": "kimi-k3",
+      "display_name": "Kimi K3",
+      "description": "Kimi K3 through OpenCode Go.",
+      "default_reasoning_level": "high",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Low reasoning effort"
+        },
+        {
+          "effort": "high",
+          "description": "High reasoning effort"
+        },
+        {
+          "effort": "max",
+          "description": "Max reasoning effort"
+        }
+      ],
+      "shell_type": "shell_command",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 21,
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "default_service_tier": null,
+      "availability_nux": null,
+      "upgrade": null,
+      "base_instructions": "You are Codex, a coding agent. Work carefully in the user's workspace, use tools when needed, and report results clearly.",
+      "model_messages": null,
+      "include_skills_usage_instructions": true,
+      "supports_reasoning_summaries": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "default_verbosity": null,
+      "apply_patch_tool_type": "freeform",
+      "web_search_tool_type": "text",
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 10000
+      },
+      "supports_parallel_tool_calls": true,
+      "supports_image_detail_original": false,
+      "context_window": 1048576,
+      "max_context_window": 1048576,
+      "auto_compact_token_limit": null,
+      "comp_hash": null,
+      "effective_context_window_percent": 90,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "supports_search_tool": false,
+      "use_responses_lite": false,
+      "auto_review_model_override": null,
+      "tool_mode": "direct",
+      "multi_agent_version": "v1"
+    },
+    {
+      "slug": "grok-4.5",
+      "display_name": "Grok 4.5",
+      "description": "Grok 4.5 through OpenCode Go.",
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
+      "shell_type": "shell_command",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 22,
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "default_service_tier": null,
+      "availability_nux": null,
+      "upgrade": null,
+      "base_instructions": "You are Codex, a coding agent. Work carefully in the user's workspace, use tools when needed, and report results clearly.",
+      "model_messages": null,
+      "include_skills_usage_instructions": true,
+      "supports_reasoning_summaries": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "default_verbosity": null,
+      "apply_patch_tool_type": "freeform",
+      "web_search_tool_type": "text",
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 10000
+      },
+      "supports_parallel_tool_calls": true,
+      "supports_image_detail_original": false,
+      "context_window": 500000,
+      "max_context_window": 500000,
+      "auto_compact_token_limit": null,
+      "comp_hash": null,
+      "effective_context_window_percent": 90,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "supports_search_tool": false,
+      "use_responses_lite": false,
+      "auto_review_model_override": null,
+      "tool_mode": "direct",
+      "multi_agent_version": "v1"
     }
   ]
 }
